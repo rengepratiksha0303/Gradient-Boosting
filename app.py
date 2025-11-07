@@ -1,79 +1,31 @@
-# app.py
 import streamlit as st
+import pandas as pd
 import numpy as np
-import pickle
 from sklearn.ensemble import GradientBoostingClassifier
-from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
-import os
 
-# -----------------------------
-# Helper function to train/load model
-# -----------------------------
-MODEL_FILE = "gbt_model.pkl"
+st.title("Gradient Boosting Classifier Demo")
 
-def train_and_save_model():
-    # Load dataset
-    X, y = load_digits(return_X_y=True)
-    train_X, test_X, train_y, test_y = train_test_split(X, y, test_size=0.25, random_state=23)
+# Generate some example data
+st.write("### Example Dataset")
+X = np.random.rand(100, 4)
+y = np.random.choice([0, 1], size=100)
 
-    # Train model
-    gbt = GradientBoostingClassifier(
-        n_estimators=300,
-        learning_rate=0.05,
-        max_depth=3,
-        max_features=5,
-        random_state=23
-    )
-    gbt.fit(train_X, train_y)
+df = pd.DataFrame(X, columns=["Feature 1", "Feature 2", "Feature 3", "Feature 4"])
+df["Target"] = y
+st.write(df.head())
 
-    # Save model
-    with open(MODEL_FILE, "wb") as f:
-        pickle.dump(gbt, f)
+# Train/test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    return gbt, test_X, test_y
+# Train model
+model = GradientBoostingClassifier()
+model.fit(X_train, y_train)
 
-def load_model():
-    if os.path.exists(MODEL_FILE):
-        with open(MODEL_FILE, "rb") as f:
-            gbt = pickle.load(f)
-        return gbt
-    else:
-        gbt, test_X, test_y = train_and_save_model()
-        return gbt
+# Make predictions
+y_pred = model.predict(X_test)
 
-# -----------------------------
-# Streamlit App
-# -----------------------------
-st.title("Digit Recognizer - Gradient Boosting")
-
-st.write("""
-This app predicts handwritten digits (0-9) using a *Gradient Boosting Classifier*.
-You can input pixel values (0-16) for each of the 64 features.
-""")
-
-# Load model
-gbt = load_model()
-
-# Optionally, show model accuracy
-X, y = load_digits(return_X_y=True)
-train_X, test_X, train_y, test_y = train_test_split(X, y, test_size=0.25, random_state=23)
-pred_y = gbt.predict(test_X)
-acc = accuracy_score(test_y, pred_y)
-st.write(f"Model accuracy on test set: *{acc:.2f}*")
-
-# User input for features
-st.subheader("Enter 64 pixel values (0-16):")
-
-# Create 64 input fields (can be improved for UI)
-user_input = []
-for i in range(64):
-    val = st.number_input(f"Pixel {i+1}", min_value=0, max_value=16, value=0)
-    user_input.append(val)
-
-# Predict button
-if st.button("Predict Digit"):
-    input_array = np.array(user_input).reshape(1, -1)
-    prediction = gbt.predict(input_array)[0]
-    st.success(f"Predicted digit: *{prediction}*")
+# Show accuracy
+acc = accuracy_score(y_test, y_pred)
+st.write("### Model Accuracy:", acc)
